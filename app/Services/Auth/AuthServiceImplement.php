@@ -37,23 +37,16 @@ class AuthServiceImplement extends Service implements AuthService{
     
         // Check password
         if (!Hash::check($request->password, $user->password)) {
-            return ResponseHelpers::sendError('The provided credentials are incorrect.', [], 401);
+            return ['success' => false, 'message' => 'Invalid credentials'];
         }
-    
-        // Generate token using Passport
-        $token = $user->createToken('authToken')->accessToken;
-    
-        return ResponseHelpers::sendSuccess('Login Successful', [
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
-        ], 200);
-      } catch (\Exception $e) {
-      return ResponseHelpers::sendError('Something went wrong during login',[$e],500);
-    }
+
+        Auth::login($user);
+
+        return ['success' => true, 'message' => 'Login successful'];
+
+        } catch (\Exception $e) {
+            return ResponseHelpers::sendError('Something went wrong during login',[$e],500);
+        }
     }
     
     public function RegisterServices($request)
@@ -89,22 +82,19 @@ class AuthServiceImplement extends Service implements AuthService{
     }
 
       // Log out the user by revoking their token
-      public function LogOutServices($request)
-      {
-          try {
-              // Get the current authenticated user
-              $user = Auth::user();
+    public function LogOutServices($request)
+    {
+        try {
+            Auth::logout();
 
-              // Revoke all of the user's tokens
-              $user->tokens->each(function ($token) {
-                  $token->delete();
-              });
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-              return ResponseHelpers::sendSuccess('Logout successful', [], 200);
-          } catch (\Exception $e) {
-              return ResponseHelpers::sendError('Something went wrong while logging out', [$e->getMessage()], 500);
-          }
-      }
+            return true;
+        } catch (\Exception $e) {
+            throw $e;
+        }    
+    }
 
       // Get the profile details of the authenticated user
       public function ProfileServices($request)

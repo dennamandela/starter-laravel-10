@@ -18,13 +18,19 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    public function login(RequestLogin $request)
+    public function index()
     {
-        try {
-            return $this->authService->LoginServices($request);
-        } catch (\Exception $e) {
-            // Handle the exception and return a response
-          return ResponseHelpers::sendError('Something went wrong',[],500);
+        return view('login');
+    }
+
+    public function authentication(RequestLogin $request)
+    {
+        $result = $this->authService->LoginServices($request);
+
+        if ($result['success']) {
+            return redirect()->intended('/dashboard')->with('success', $result['message']);
+        } else {
+            return back()->with('error', $result['message'])->withInput();
         }
     }
 
@@ -53,10 +59,13 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-        return $this->authService->LogOutServices($request);
+            $this->authService->LogOutServices($request);
+
+            return redirect('/')->with('success', 'Logout berhasil');
         } catch (\Exception $e) {
-            // Handle the exception and return a response
-          return ResponseHelpers::sendError('Something went wrong',[],500);
+            return redirect()->back()->withErrors([
+                'error' => 'Gagal logout'
+            ]);
         }
     }
 }
